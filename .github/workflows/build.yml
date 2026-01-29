@@ -22,7 +22,7 @@ on:
         description: "Select Systemd:"
         required: true
         type: string
-        default: "never"
+        default: "always"
       de:
         description: "Select Desktop Environment:"
         required: true
@@ -43,17 +43,16 @@ on:
         required: true
         type: string
         default: "147147"
-      gh:
-        description: "Name of GitHub Release:"
-        required: true
+      mirrors:
+        description: "Use alt RU mirrors?"
+        required: false
         type: string
-        default: "postmarketOS"
+        default: "false"
       noLogs:
         description: "Delete releases,tags,workflowRuns?"
         required: true
         type: string
         default: "false"
-
 
 permissions:
   contents: write # Give permission to put the release into the repo
@@ -94,7 +93,7 @@ jobs:
           retain_days: 0
           keep_minimum_runs: 0
 
-  Build-pmos:
+  Build-pmOS:
     runs-on: ubuntu-latest
 
     steps:
@@ -103,14 +102,14 @@ jobs:
 
       - name: Install pmbootstrap
         run: |
-          git clone https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git
+          git clone https://gitlab.postmarketos.org/postmarketOS/pmbootstrap.git --depth 1
           mkdir -p ~/.local/bin
           ln -s "$PWD/pmbootstrap/pmbootstrap.py" ~/.local/bin/pmbootstrap
           PATH="$HOME/.local/bin:$PATH"
           pmbootstrap --version
         shell: bash
 
-      - name: Create config and init pmbootstrap
+      - name: Create config for pmbootstrap
         run: |
           yes '' | pmbootstrap init || true
           pmbootstrap config device ${{ github.event.inputs.device }}
@@ -120,22 +119,30 @@ jobs:
           pmbootstrap config ui ${{ github.event.inputs.de }}
           pmbootstrap config user ${{ github.event.inputs.username }}
           pmbootstrap config locale ${{ github.event.inputs.locale }}
-          yes '' | pmbootstrap init || true
         shell: bash
 
-      - name: Build image
+      - name: Setup alternative mirrors
+        if: ${{ github.event.inputs.mirrors == 'true' }}
         run: |
+          pmbootstrap config mirrors.alpine "http://mirror.yandex.ru/mirrors/alpine/"
+          pmbootstrap config mirrors.pmaports "https://mirror.minlexx.ru/postmarketos/"
+          pmbootstrap config mirrors.systemd "https://mirror.minlexx.ru/postmarketos/extra-repos/systemd/"
+        shell: bash
+
+      - name: Init pmbootstrap and Build image
+        run: |
+          yes '' | pmbootstrap init || true
           pmbootstrap install --password ${{ github.event.inputs.pass }}
           pmbootstrap shutdown
         shell: bash
 
       - name: Compress images
         run: |
-          sudo mv ~/.local/var/pmbootstrap/chroot_rootfs_*/boot/lk2nd.img lk2nd.img
-          sudo mv ~/.local/var/pmbootstrap/chroot_native/home/pmos/rootfs/*.img rootfs.img
+          sudo mv ~/.local/var/pmbootstrap/chroot_rootfs_${{ github.event.inputs.device }}/boot/lk2nd.img lk2nd.img
+          sudo mv ~/.local/var/pmbootstrap/chroot_native/home/pmos/rootfs/${{ github.event.inputs.device }}.img rootfs.img
           sudo chmod 777 lk2nd.img
           sudo chmod 777 rootfs.img
-          zip -9 -v "pmOS ${{ github.event.inputs.device }}.zip" lk2nd.img rootfs.img
+          zip -9 -v "pmOS.${{ github.event.inputs.device }}.${{ github.event.inputs.de }}.zip" lk2nd.img rootfs.img
           rm *.img
         shell: bash
 
@@ -148,13 +155,14 @@ jobs:
           echo "Desktop Environment: ${{ github.event.inputs.de }}" >> release_body.txt
           echo "System language: ${{ github.event.inputs.locale }}" >> release_body.txt
           echo "Username: ${{ github.event.inputs.username }}" >> release_body.txt
-          echo "### User Password: ${{ github.event.inputs.pass }}" >> release_body.txt
+          echo "**User Password: ${{ github.event.inputs.pass }}**" >> release_body.txt
+          echo "Alternative RU mirrors: ${{ github.event.inputs.mirrors }}" >> release_body.txt
         shell: bash
 
       - name: Create Git Tag and Release with unique name
         id: vars
         run: |
-          echo "tag_name=${{ github.event.inputs.gh }}-$(date +'%Y%m%d-%H%M%S'-UTC)" >> "$GITHUB_OUTPUT"
+          echo "tag_name=${{ github.event.inputs.hostname }}-$(date +'%Y%m%d-%H%M%S'-UTC)" >> "$GITHUB_OUTPUT"
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
           git tag ${{ steps.vars.outputs.tag_name }}
