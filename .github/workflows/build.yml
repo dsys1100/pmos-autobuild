@@ -17,12 +17,12 @@ on:
         description: "Select Hostname:"
         required: true
         type: string
-        default: "pmos"
-      systemd:
-        description: "Select Systemd:"
+        default: "nura"
+      loader:
+        description: "Select Loader:"
         required: true
         type: string
-        default: "always"
+        default: "systemd"
       de:
         description: "Select Desktop Environment:"
         required: true
@@ -34,7 +34,7 @@ on:
         type: string
         default: "en_US"
       username:
-        description: "Select pmOS Username:"
+        description: "Select Nura Username:"
         required: true
         type: string
         default: "user"
@@ -115,7 +115,7 @@ jobs:
           pmbootstrap config device ${{ github.event.inputs.device }}
           pmbootstrap config extra_packages ${{ github.event.inputs.extras }}
           pmbootstrap config hostname ${{ github.event.inputs.hostname }}
-          pmbootstrap config systemd ${{ github.event.inputs.systemd }}
+          pmbootstrap config service_manager ${{ github.event.inputs.loader }}
           pmbootstrap config ui ${{ github.event.inputs.de }}
           pmbootstrap config user ${{ github.event.inputs.username }}
           pmbootstrap config locale ${{ github.event.inputs.locale }}
@@ -142,7 +142,7 @@ jobs:
           sudo mv ~/.local/var/pmbootstrap/chroot_native/home/pmos/rootfs/${{ github.event.inputs.device }}.img rootfs.img
           sudo chmod 777 lk2nd.img
           sudo chmod 777 rootfs.img
-          zip -9 -v "pmOS.${{ github.event.inputs.device }}.${{ github.event.inputs.de }}.zip" lk2nd.img rootfs.img
+          zip -9 -v "Nura.${{ github.event.inputs.device }}.${{ github.event.inputs.de }}.zip" lk2nd.img rootfs.img
           rm *.img
         shell: bash
 
@@ -151,7 +151,7 @@ jobs:
           echo "Device: ${{ github.event.inputs.device }}" > release_body.txt
           echo "Extra Packages: ${{ github.event.inputs.extras }}" >> release_body.txt
           echo "Hostname: ${{ github.event.inputs.hostname }}" >> release_body.txt
-          echo "Systemd: ${{ github.event.inputs.systemd }}" >> release_body.txt
+          echo "Loader: ${{ github.event.inputs.systemd }}" >> release_body.txt
           echo "Desktop Environment: ${{ github.event.inputs.de }}" >> release_body.txt
           echo "System language: ${{ github.event.inputs.locale }}" >> release_body.txt
           echo "Username: ${{ github.event.inputs.username }}" >> release_body.txt
@@ -173,7 +173,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            pmOS*.zip
+            Nura*.zip
           tag_name: ${{ steps.vars.outputs.tag_name }}
           name: ${{ steps.vars.outputs.tag_name }}
           draft: false
