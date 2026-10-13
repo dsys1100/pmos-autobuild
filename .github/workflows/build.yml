@@ -151,7 +151,7 @@ jobs:
           echo "Device: ${{ github.event.inputs.device }}" > release_body.txt
           echo "Extra Packages: ${{ github.event.inputs.extras }}" >> release_body.txt
           echo "Hostname: ${{ github.event.inputs.hostname }}" >> release_body.txt
-          echo "Loader: ${{ github.event.inputs.systemd }}" >> release_body.txt
+          echo "Loader: ${{ github.event.inputs.loader }}" >> release_body.txt
           echo "Desktop Environment: ${{ github.event.inputs.de }}" >> release_body.txt
           echo "System language: ${{ github.event.inputs.locale }}" >> release_body.txt
           echo "Username: ${{ github.event.inputs.username }}" >> release_body.txt
